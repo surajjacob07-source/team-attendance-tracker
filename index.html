@@ -3,92 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Attendance Tracker</title>
+    <title>Amazon Pay Channel Partner - SMB Team Attendance</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <!-- Login Section -->
-        <div id="loginSection" class="section">
-            <div class="login-card">
-                <h1>Team Attendance Tracker</h1>
-                <p>Select your name to continue</p>
-                <div class="user-selection">
-                    <button class="user-btn" onclick="login('Saurabh')">Saurabh</button>
-                    <button class="user-btn" onclick="login('Dhruv')">Dhruv</button>
-                    <button class="user-btn" onclick="login('Divyansh')">Divyansh</button>
-                    <button class="user-btn" onclick="login('Suraj')">Suraj</button>
-                    <button class="user-btn" onclick="login('Raja')">Raja</button>
-                </div>
-            </div>
+        <header>
+            <h1>🏢 Amazon Pay Channel Partner - SMB Team Attendance</h1>
+            <button id="downloadReport" class="btn btn-primary">📊 Download Report</button>
+        </header>
+
+        <div class="legend">
+            <div class="legend-item"><span class="box green"></span> In Office (Default)</div>
+            <div class="legend-item"><span class="box blue"></span> External Meeting</div>
+            <div class="legend-item"><span class="box red"></span> On Leave</div>
         </div>
 
-        <!-- Main Dashboard -->
-        <div id="dashboardSection" class="section hidden">
-            <header class="dashboard-header">
-                <h1>Attendance Dashboard</h1>
-                <div class="user-info">
-                    <span id="currentUser">Welcome, User</span>
-                    <button onclick="logout()" class="logout-btn">Logout</button>
-                </div>
-            </header>
+        <div id="membersContainer" class="members-container">
+            <!-- Member sections will be generated here -->
+        </div>
+    </div>
 
-            <div class="dashboard-content">
-                <!-- Today's Attendance -->
-                <div class="card">
-                    <h2>Mark Today's Attendance</h2>
-                    <div class="date-display">
-                        <span id="todayDate"></span>
-                    </div>
-                    <div class="attendance-options">
-                        <button class="attendance-btn in-office" onclick="markAttendance('in-office')">
-                            <span class="icon">🏢</span>
-                            In Office
-                        </button>
-                        <button class="attendance-btn external-meeting" onclick="markAttendance('external-meeting')">
-                            <span class="icon">🤝</span>
-                            External Meeting
-                        </button>
-                        <button class="attendance-btn leave" onclick="markAttendance('leave')">
-                            <span class="icon">🏠</span>
-                            On Leave
-                        </button>
-                    </div>
-                    <div id="todayStatus" class="status-display"></div>
-                </div>
-
-                <!-- Attendance History -->
-                <div class="card">
-                    <h2>Your Attendance History</h2>
-                    <div class="history-controls">
-                        <select id="monthFilter" onchange="filterHistory()">
-                            <option value="">All Months</option>
-                            <option value="0">January</option>
-                            <option value="1">February</option>
-                            <option value="2">March</option>
-                            <option value="3">April</option>
-                            <option value="4">May</option>
-                            <option value="5">June</option>
-                            <option value="6">July</option>
-                            <option value="7">August</option>
-                            <option value="8">September</option>
-                            <option value="9">October</option>
-                            <option value="10">November</option>
-                            <option value="11">December</option>
-                        </select>
-                        <button onclick="downloadReport()" class="download-btn">📊 Download Report</button>
-                    </div>
-                    <div id="attendanceHistory" class="history-list"></div>
-                </div>
-
-                <!-- Team Overview -->
-                <div class="card">
-                    <h2>Team Overview</h2>
-                    <div class="team-controls">
-                        <button onclick="showTeamView()" class="team-btn">View All Team Members</button>
-                        <button onclick="downloadTeamReport()" class="download-btn">📊 Download Team Report</button>
-                    </div>
-                    <div id="teamOverview" class="team-grid"></div>
+    <!-- Modal for marking attendance -->
+    <div id="attendanceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Mark Attendance</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="selectedInfo"></p>
+                <div class="attendance-options">
+                    <button class="btn-attendance meeting" data-status="meeting">📅 External Meeting</button>
+                    <button class="btn-attendance leave" data-status="leave">🏠 On Leave</button>
+                    <button class="btn-attendance office" data-status="office">🏢 In Office (Default)</button>
                 </div>
             </div>
         </div>

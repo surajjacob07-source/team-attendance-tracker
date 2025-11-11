@@ -13,18 +13,42 @@
             <button id="downloadReport" class="btn btn-primary">📊 Download Report</button>
         </header>
 
-        <div class="legend">
-            <div class="legend-item"><span class="box green"></span> In Office (Default)</div>
-            <div class="legend-item"><span class="box blue"></span> External Meeting</div>
-            <div class="legend-item"><span class="box red"></span> On Leave</div>
+        <div class="legend-section">
+            <h3>Legend:</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-box wfh"></div>
+                    <span>Work From Home</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box office"></div>
+                    <span>In Office</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box meeting"></div>
+                    <span>External Meeting</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box leave"></div>
+                    <span>On Leave</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box blank"></div>
+                    <span>Not Marked</span>
+                </div>
+            </div>
         </div>
 
-        <div id="membersContainer" class="members-container">
-            <!-- Member sections will be generated here -->
+        <div class="instructions">
+            <p>📌 Click any day to mark status OR use bulk select to mark multiple days at once</p>
+        </div>
+
+        <div id="calendarContainer" class="calendar-container">
+            <!-- Calendar will be generated here -->
         </div>
     </div>
 
-    <!-- Modal for marking attendance -->
+    <!-- Modal for marking single date attendance -->
     <div id="attendanceModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -34,9 +58,33 @@
             <div class="modal-body">
                 <p id="selectedInfo"></p>
                 <div class="attendance-options">
+                    <button class="btn-attendance wfh" data-status="wfh">🏠 Work From Home</button>
+                    <button class="btn-attendance office" data-status="office">🏢 In Office</button>
                     <button class="btn-attendance meeting" data-status="meeting">📅 External Meeting</button>
-                    <button class="btn-attendance leave" data-status="leave">🏠 On Leave</button>
-                    <button class="btn-attendance office" data-status="office">🏢 In Office (Default)</button>
+                    <button class="btn-attendance leave" data-status="leave">🚫 On Leave</button>
+                    <button class="btn-attendance clear" data-status="clear">❌ Clear Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for bulk selection -->
+    <div id="bulkModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bulk Mark Attendance</h2>
+                <span class="close-bulk">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="bulkInfo">Select dates below, then choose a status to apply to all selected dates</p>
+                <div id="bulkDatesList" class="bulk-dates-list">
+                    <!-- Checkboxes will be generated here -->
+                </div>
+                <div class="bulk-actions">
+                    <button class="btn-bulk-apply wfh" data-status="wfh">Apply: Work From Home</button>
+                    <button class="btn-bulk-apply office" data-status="office">Apply: In Office</button>
+                    <button class="btn-bulk-apply meeting" data-status="meeting">Apply: External Meeting</button>
+                    <button class="btn-bulk-apply leave" data-status="leave">Apply: On Leave</button>
                 </div>
             </div>
         </div>

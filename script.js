@@ -4,6 +4,7 @@ class AttendanceTracker {
         this.attendanceData = this.loadData();
         this.selectedDate = null;
         this.selectedMember = null;
+        this.currentBulkMember = null;
         // Store the current viewing month offset for each member (0 = current month)
         this.memberMonthOffsets = {};
         this.members.forEach(member => {
@@ -32,7 +33,7 @@ class AttendanceTracker {
             this.downloadTeamReport();
         });
 
-        // Modal close
+        // Single date modal close
         const modal = document.getElementById('attendanceModal');
         const closeBtn = document.querySelector('.close');
         
@@ -46,17 +47,39 @@ class AttendanceTracker {
             }
         });
 
-        // Attendance buttons
+        // Bulk modal close
+        const bulkModal = document.getElementById('bulkModal');
+        const closeBulkBtn = document.querySelector('.close-bulk');
+        
+        closeBulkBtn.addEventListener('click', () => {
+            bulkModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === bulkModal) {
+                bulkModal.style.display = 'none';
+            }
+        });
+
+        // Attendance buttons for single date
         document.querySelectorAll('.btn-attendance').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const status = e.target.dataset.status;
                 this.markAttendance(status);
             });
         });
+
+        // Bulk apply buttons
+        document.querySelectorAll('.btn-bulk-apply').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const status = e.target.dataset.status;
+                this.applyBulkAttendance(status);
+            });
+        });
     }
 
     renderAllMembers() {
-        const container = document.getElementById('membersContainer');
+        const container = document.getElementById('calendarContainer');
         container.innerHTML = '';
 
         this.members.forEach(member => {
@@ -105,6 +128,18 @@ class AttendanceTracker {
         headerContainer.appendChild(nextBtn);
         section.appendChild(headerContainer);
 
+        // Bulk select button
+        const bulkContainer = document.createElement('div');
+        bulkContainer.className = 'bulk-select-container';
+        const bulkBtn = document.createElement('button');
+        bulkBtn.className = 'btn-bulk-select';
+        bulkBtn.textContent = '📋 Bulk Mark Dates';
+        bulkBtn.addEventListener('click', () => {
+            this.openBulkModal(member);
+        });
+        bulkContainer.appendChild(bulkBtn);
+        section.appendChild(bulkContainer);
+
         // Calendars row (3 months)
         const calendarsRow = document.createElement('div');
         calendarsRow.className = 'calendars-row';
@@ -132,9 +167,6 @@ class AttendanceTracker {
         const today = new Date();
         const offset = this.memberMonthOffsets[member];
         
-        // Get 3 consecutive months based on offset
-        // Offset 0 means current month and 2 previous months
-        // Offset -3 means 3 months back, etc.
         for (let i = 2; i >= 0; i--) {
             const date = new Date(today.getFullYear(), today.getMonth() + offset - i, 1);
             months.push({
@@ -151,13 +183,11 @@ class AttendanceTracker {
         const calendar = document.createElement('div');
         calendar.className = 'month-calendar';
 
-        // Month title
         const title = document.createElement('div');
         title.className = 'month-title';
         title.textContent = monthData.name;
         calendar.appendChild(title);
 
-        // Weekday headers (Mon-Fri only)
         const headers = document.createElement('div');
         headers.className = 'weekday-headers';
         const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -169,11 +199,9 @@ class AttendanceTracker {
         });
         calendar.appendChild(headers);
 
-        // Days grid (weekdays only, properly aligned)
         const daysGrid = document.createElement('div');
         daysGrid.className = 'days-grid';
 
-        // Get all dates organized by week rows
         const datesByWeek = this.getWeekdaysByWeek(monthData.year, monthData.month);
         
         datesByWeek.forEach(week => {
@@ -182,7 +210,6 @@ class AttendanceTracker {
                     const dayCell = this.createDayCell(member, date);
                     daysGrid.appendChild(dayCell);
                 } else {
-                    // Empty cell for alignment
                     const emptyCell = document.createElement('div');
                     emptyCell.className = 'day-cell empty';
                     daysGrid.appendChild(emptyCell);
@@ -197,19 +224,14 @@ class AttendanceTracker {
     getWeekdaysByWeek(year, month) {
         const weeks = [];
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        
-        let currentWeek = [null, null, null, null, null]; // Mon-Fri
+        let currentWeek = [null, null, null, null, null];
         
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
-            const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+            const dayOfWeek = date.getDay();
             
-            // Only process weekdays
             if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                // dayOfWeek 1=Mon maps to index 0, 2=Tue to index 1, etc.
                 currentWeek[dayOfWeek - 1] = date;
-                
-                // If Friday (dayOfWeek = 5), complete the week
                 if (dayOfWeek === 5) {
                     weeks.push([...currentWeek]);
                     currentWeek = [null, null, null, null, null];
@@ -217,14 +239,13 @@ class AttendanceTracker {
             }
         }
         
-        // Add any remaining partial week
         if (currentWeek.some(day => day !== null)) {
             weeks.push(currentWeek);
         }
         
         return weeks;
     }
-    
+
     getWeekdaysInMonth(year, month) {
         const weekdays = [];
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -232,13 +253,10 @@ class AttendanceTracker {
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dayOfWeek = date.getDay();
-            
-            // Only include weekdays (1=Monday to 5=Friday)
             if (dayOfWeek >= 1 && dayOfWeek <= 5) {
                 weekdays.push(date);
             }
         }
-
         return weekdays;
     }
 
@@ -250,7 +268,6 @@ class AttendanceTracker {
         const dateKey = this.formatDateKey(date);
         const cellKey = `${member}-${dateKey}`;
 
-        // Check if future date
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
@@ -258,20 +275,24 @@ class AttendanceTracker {
             cell.classList.add('future');
             cell.title = 'Future date';
         } else {
-            // Check attendance status (default is office)
-            const status = this.attendanceData[cellKey] || 'office';
+            const status = this.attendanceData[cellKey];
             
-            if (status === 'meeting') {
+            if (status === 'wfh') {
+                cell.classList.add('wfh');
+                cell.title = 'Work From Home';
+            } else if (status === 'office') {
+                cell.classList.add('office');
+                cell.title = 'In Office';
+            } else if (status === 'meeting') {
                 cell.classList.add('meeting');
                 cell.title = 'External Meeting';
             } else if (status === 'leave') {
                 cell.classList.add('leave');
                 cell.title = 'On Leave';
             } else {
-                cell.title = 'In Office';
+                cell.title = 'Not marked - Click to set status';
             }
             
-            // Add click event
             cell.addEventListener('click', () => {
                 this.openAttendanceModal(member, date);
             });
@@ -308,23 +329,86 @@ class AttendanceTracker {
         const dateKey = this.formatDateKey(this.selectedDate);
         const cellKey = `${this.selectedMember}-${dateKey}`;
         
-        if (status === 'office') {
-            // Remove entry (default is office)
+        if (status === 'clear') {
             delete this.attendanceData[cellKey];
         } else {
-            // Store meeting or leave
             this.attendanceData[cellKey] = status;
         }
         
         this.saveData();
         this.renderAllMembers();
-        
-        // Close modal
         document.getElementById('attendanceModal').style.display = 'none';
     }
 
+    openBulkModal(member) {
+        this.currentBulkMember = member;
+        const modal = document.getElementById('bulkModal');
+        const datesList = document.getElementById('bulkDatesList');
+        datesList.innerHTML = '';
+
+        const months = this.get3MonthsForMember(member);
+        const allDates = [];
+
+        months.forEach(monthData => {
+            const weekdays = this.getWeekdaysInMonth(monthData.year, monthData.month);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            weekdays.forEach(date => {
+                if (date <= today) {
+                    allDates.push(date);
+                }
+            });
+        });
+
+        allDates.forEach(date => {
+            const item = document.createElement('div');
+            item.className = 'bulk-date-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `bulk-${this.formatDateKey(date)}`;
+            checkbox.value = this.formatDateKey(date);
+
+            const label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.textContent = date.toLocaleDateString('en-US', { 
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+
+            item.appendChild(checkbox);
+            item.appendChild(label);
+            datesList.appendChild(item);
+        });
+
+        modal.style.display = 'block';
+    }
+
+    applyBulkAttendance(status) {
+        if (!this.currentBulkMember) return;
+
+        const checkboxes = document.querySelectorAll('#bulkDatesList input[type="checkbox"]:checked');
+        
+        if (checkboxes.length === 0) {
+            alert('Please select at least one date');
+            return;
+        }
+
+        checkboxes.forEach(checkbox => {
+            const dateKey = checkbox.value;
+            const cellKey = `${this.currentBulkMember}-${dateKey}`;
+            this.attendanceData[cellKey] = status;
+        });
+
+        this.saveData();
+        this.renderAllMembers();
+        document.getElementById('bulkModal').style.display = 'none';
+    }
+
     downloadTeamReport() {
-        // Get all months from January of current year to current month
         const today = new Date();
         const months = [];
         
@@ -343,24 +427,22 @@ class AttendanceTracker {
             csvContent += `\n${monthData.name}\n`;
             csvContent += 'Member,';
             
-            // Get all weekdays for this month
             const weekdays = this.getWeekdaysInMonth(monthData.year, monthData.month);
             
-            // Header row with dates
             weekdays.forEach(date => {
                 csvContent += `${date.getDate()},`;
             });
-            csvContent += 'Office Days,Meeting Days,Leave Days\n';
+            csvContent += 'WFH Days,Office Days,Meeting Days,Leave Days,Not Marked\n';
             
-            // Data rows for each member
             this.members.forEach(member => {
                 csvContent += `${member},`;
+                let wfhDays = 0;
                 let officeDays = 0;
                 let meetingDays = 0;
                 let leaveDays = 0;
+                let notMarked = 0;
                 
                 weekdays.forEach(date => {
-                    // Skip future dates
                     const checkToday = new Date();
                     checkToday.setHours(0, 0, 0, 0);
                     if (date > checkToday) {
@@ -370,36 +452,40 @@ class AttendanceTracker {
                     
                     const dateKey = this.formatDateKey(date);
                     const cellKey = `${member}-${dateKey}`;
-                    const status = this.attendanceData[cellKey] || 'office';
+                    const status = this.attendanceData[cellKey];
                     
-                    if (status === 'meeting') {
+                    if (status === 'wfh') {
+                        csvContent += 'WFH,';
+                        wfhDays++;
+                    } else if (status === 'office') {
+                        csvContent += 'Office,';
+                        officeDays++;
+                    } else if (status === 'meeting') {
                         csvContent += 'Meeting,';
                         meetingDays++;
                     } else if (status === 'leave') {
                         csvContent += 'Leave,';
                         leaveDays++;
                     } else {
-                        csvContent += 'Office,';
-                        officeDays++;
+                        csvContent += 'Not Marked,';
+                        notMarked++;
                     }
                 });
                 
-                csvContent += `${officeDays},${meetingDays},${leaveDays}\n`;
+                csvContent += `${wfhDays},${officeDays},${meetingDays},${leaveDays},${notMarked}\n`;
             });
             
             csvContent += '\n';
         });
         
-        // Add summary statistics
         csvContent += `\nYear-to-Date Summary (${today.getFullYear()})\n`;
-        csvContent += 'Member,Total Office Days,Total Meeting Days,Total Leave Days\n';
+        csvContent += 'Member,Total WFH Days,Total Office Days,Total Meeting Days,Total Leave Days,Total Not Marked\n';
         
         this.members.forEach(member => {
             const stats = this.calculateMemberStats(member, months);
-            csvContent += `${member},${stats.office},${stats.meeting},${stats.leave}\n`;
+            csvContent += `${member},${stats.wfh},${stats.office},${stats.meeting},${stats.leave},${stats.notMarked}\n`;
         });
         
-        // Download file
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
@@ -414,38 +500,42 @@ class AttendanceTracker {
     }
 
     calculateMemberStats(member, months) {
+        let wfh = 0;
         let office = 0;
         let meeting = 0;
         let leave = 0;
+        let notMarked = 0;
         
         months.forEach(monthData => {
             const weekdays = this.getWeekdaysInMonth(monthData.year, monthData.month);
             
             weekdays.forEach(date => {
-                // Skip future dates
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 if (date > today) return;
                 
                 const dateKey = this.formatDateKey(date);
                 const cellKey = `${member}-${dateKey}`;
-                const status = this.attendanceData[cellKey] || 'office';
+                const status = this.attendanceData[cellKey];
                 
-                if (status === 'meeting') {
+                if (status === 'wfh') {
+                    wfh++;
+                } else if (status === 'office') {
+                    office++;
+                } else if (status === 'meeting') {
                     meeting++;
                 } else if (status === 'leave') {
                     leave++;
                 } else {
-                    office++;
+                    notMarked++;
                 }
             });
         });
         
-        return { office, meeting, leave };
+        return { wfh, office, meeting, leave, notMarked };
     }
 }
 
-// Initialize the tracker when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new AttendanceTracker();
 });

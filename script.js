@@ -1,39 +1,65 @@
 class AttendanceTracker {
     constructor() {
         this.members = ['Saurabh', 'Dhruv', 'Divyansh', 'Suraj', 'Raja'];
-        this.attendanceData = this.loadData();
+        this.attendanceData = {};
         this.selectedDate = null;
         this.selectedMember = null;
         this.currentBulkMember = null;
-        // Store the current viewing month offset for each member (0 = current month)
         this.memberMonthOffsets = {};
         this.members.forEach(member => {
             this.memberMonthOffsets[member] = 0;
         });
+        
+        // Firebase reference
+        this.attendanceRef = database.ref('attendance');
+        
         this.init();
     }
 
     init() {
-        this.renderAllMembers();
+        this.showLoading(true);
+        this.loadDataFromFirebase();
         this.bindEvents();
     }
 
-    loadData() {
-        const stored = localStorage.getItem('teamAttendanceData');
-        return stored ? JSON.parse(stored) : {};
+    showLoading(show) {
+        const indicator = document.getElementById('loadingIndicator');
+        if (indicator) {
+            indicator.style.display = show ? 'block' : 'none';
+        }
     }
 
-    saveData() {
-        localStorage.setItem('teamAttendanceData', JSON.stringify(this.attendanceData));
+    loadDataFromFirebase() {
+        // Listen for real-time updates
+        this.attendanceRef.on('value', (snapshot) => {
+            this.attendanceData = snapshot.val() || {};
+            this.renderAllMembers();
+            this.showLoading(false);
+        }, (error) => {
+            console.error('Firebase read error:', error);
+            alert('Error connecting to Firebase. Please check your configuration.');
+            this.showLoading(false);
+        });
+    }
+
+    saveDataToFirebase() {
+        this.showLoading(true);
+        this.attendanceRef.set(this.attendanceData)
+            .then(() => {
+                this.showLoading(false);
+            })
+            .catch((error) => {
+                console.error('Firebase write error:', error);
+                alert('Error saving data to Firebase.');
+                this.showLoading(false);
+            });
     }
 
     bindEvents() {
-        // Download report button
         document.getElementById('downloadReport').addEventListener('click', () => {
             this.downloadTeamReport();
         });
 
-        // Single date modal close
         const modal = document.getElementById('attendanceModal');
         const closeBtn = document.querySelector('.close');
         
@@ -47,7 +73,6 @@ class AttendanceTracker {
             }
         });
 
-        // Bulk modal close
         const bulkModal = document.getElementById('bulkModal');
         const closeBulkBtn = document.querySelector('.close-bulk');
         
@@ -61,7 +86,6 @@ class AttendanceTracker {
             }
         });
 
-        // Attendance buttons for single date
         document.querySelectorAll('.btn-attendance').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const status = e.target.dataset.status;
@@ -69,7 +93,6 @@ class AttendanceTracker {
             });
         });
 
-        // Bulk apply buttons
         document.querySelectorAll('.btn-bulk-apply').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const status = e.target.dataset.status;
@@ -92,7 +115,6 @@ class AttendanceTracker {
         const section = document.createElement('div');
         section.className = 'member-section';
 
-        // Member header with navigation
         const headerContainer = document.createElement('div');
         headerContainer.className = 'member-header-container';
 
@@ -113,7 +135,6 @@ class AttendanceTracker {
         nextBtn.innerHTML = 'Next ▶';
         nextBtn.addEventListener('click', () => {
             this.memberMonthOffsets[member] += 3;
-            // Don't allow going beyond current month
             const today = new Date();
             const futureCheck = new Date(today.getFullYear(), today.getMonth() + this.memberMonthOffsets[member], 1);
             if (futureCheck > today) {
@@ -128,7 +149,6 @@ class AttendanceTracker {
         headerContainer.appendChild(nextBtn);
         section.appendChild(headerContainer);
 
-        // Bulk select button
         const bulkContainer = document.createElement('div');
         bulkContainer.className = 'bulk-select-container';
         const bulkBtn = document.createElement('button');
@@ -140,7 +160,6 @@ class AttendanceTracker {
         bulkContainer.appendChild(bulkBtn);
         section.appendChild(bulkContainer);
 
-        // Calendars row (3 months)
         const calendarsRow = document.createElement('div');
         calendarsRow.className = 'calendars-row';
         calendarsRow.id = `calendars-${member}`;
@@ -335,8 +354,7 @@ class AttendanceTracker {
             this.attendanceData[cellKey] = status;
         }
         
-        this.saveData();
-        this.renderAllMembers();
+        this.saveDataToFirebase();
         document.getElementById('attendanceModal').style.display = 'none';
     }
 
@@ -403,8 +421,7 @@ class AttendanceTracker {
             this.attendanceData[cellKey] = status;
         });
 
-        this.saveData();
-        this.renderAllMembers();
+        this.saveDataToFirebase();
         document.getElementById('bulkModal').style.display = 'none';
     }
 

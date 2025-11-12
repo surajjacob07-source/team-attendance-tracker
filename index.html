@@ -40,7 +40,11 @@
         </div>
 
         <div class="instructions">
-            <p>📌 Click any day to mark status OR use bulk select to mark multiple days at once</p>
+            <p>📌 Click any day to mark status OR use bulk select to mark multiple days at once | 🔄 Real-time sync enabled</p>
+        </div>
+
+        <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+            <p>🔄 Syncing with Firebase...</p>
         </div>
 
         <div id="calendarContainer" class="calendar-container">
@@ -90,6 +94,14 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Main Application Script -->
     <script src="script.js"></script>
 </body>
 </html>
